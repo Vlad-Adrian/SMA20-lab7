@@ -10,7 +10,7 @@
         android:id="@+id/tStatus"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:hint="No entries found for January"/>
+        android:hint="No entries found"/>
 
     <LinearLayout
         android:id="@+id/lStatus"
@@ -60,30 +60,7 @@
         android:text="Update"/>
 
     <LinearLayout
-        android:id="@+id/searchLayout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:weightSum="1">
-
-        <EditText
-            android:id="@+id/eSearch"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="0.6"
-            android:hint="January" />
-
-        <Button
-            android:id="@+id/bSearch"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="0.4"
-            android:onClick="clicked"
-            android:text="Search"/>
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_above="@+id/searchLayout"
+        android:layout_below="@+id/bUpdate"
         android:layout_marginBottom="20dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
@@ -91,7 +68,7 @@
             android:id="@+id/spinnerMonths"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:spinnerMode="dropdown"/>
+            android:spinnerMode="dropdown" />
     </LinearLayout>
 
 </RelativeLayout>

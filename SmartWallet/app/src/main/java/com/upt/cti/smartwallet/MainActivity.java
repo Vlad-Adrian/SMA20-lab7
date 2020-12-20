@@ -28,11 +28,14 @@ import static com.google.android.gms.common.util.ArrayUtils.contains;
 public class MainActivity extends AppCompatActivity {
 
     private TextView tStatus;
-    private EditText eSearch, eIncome, eExpenses;
+    private EditText eIncome, eExpenses;
 
     private DatabaseReference databaseReference;
     ValueEventListener databaseListener;
     private final String[] months = {"january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"};
+    private String preSelectedMonth;
+    private String selectedMonth;
+    MonthlyExpenses monthlyExpense;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,7 +43,6 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         tStatus = findViewById(R.id.tStatus);
-        eSearch = findViewById(R.id.eSearch);
         eIncome = findViewById(R.id.eIncome);
         eExpenses = findViewById(R.id.eExpenses);
 
@@ -49,23 +51,34 @@ public class MainActivity extends AppCompatActivity {
 
 
         SharedPreferences sharedPreferences = getSharedPreferences("lastMonth", MODE_PRIVATE);
-        eSearch.setText(sharedPreferences.getString("month", ""));
-
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
+        preSelectedMonth = sharedPreferences.getString("month","");
         getMonths(m -> {
             Spinner spinner = findViewById(R.id.spinnerMonths);
-            ArrayAdapter<String> adapter = new ArrayAdapter<String>(getBaseContext(), android.R.layout.simple_spinner_dropdown_item, m);
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(getBaseContext(), android.R.layout.simple_spinner_dropdown_item, m);
             spinner.setAdapter(adapter);
-            spinner.setSelection(0, false);
+            int index = -1;
+            if(!preSelectedMonth.equals("")){
+                for(int i = 0; i< m.size();i++){
+                    if(m.get(i).equals(preSelectedMonth)){
+                        index = i;
+                        break;
+                    }
+                }
+                createNewDBListener(preSelectedMonth);
+            }
+            if(index != -1){
+                spinner.setSelection(index, false);
+            }
             spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                 @Override
                 public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                    if (!parent.getItemAtPosition(position).toString().toLowerCase().equals(eSearch.getText().toString()))
-                        eSearch.setText(parent.getItemAtPosition(position).toString().toLowerCase());
+                    selectedMonth = parent.getItemAtPosition(position).toString().toLowerCase();
+                    SharedPreferences.Editor sharedPreferencesEditor = getSharedPreferences("lastMonth", MODE_PRIVATE).edit();
+                    sharedPreferencesEditor.putString("month", selectedMonth);
+                    sharedPreferencesEditor.apply();
+
+                    tStatus.setText("Searching ...");
+                    createNewDBListener(selectedMonth);
                 }
 
                 @Override
@@ -73,6 +86,12 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
         });
+
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
     }
 
     private void createNewDBListener(String currentMonth) {
@@ -86,7 +105,7 @@ public class MainActivity extends AppCompatActivity {
                 try {
                     // This method is called once with the initial value and again
                     // whenever data at this location is updated.
-                    MonthlyExpenses monthlyExpense = dataSnapshot.getValue(MonthlyExpenses.class);
+                    monthlyExpense = dataSnapshot.getValue(MonthlyExpenses.class);
                     // explicit mapping of month name from entry key
                     monthlyExpense.month = dataSnapshot.getKey();
 
@@ -112,28 +131,18 @@ public class MainActivity extends AppCompatActivity {
     public void clicked(View view) {
         String currentMonth;
         switch (view.getId()) {
-            case R.id.bSearch:
-                if (!eSearch.getText().toString().isEmpty()) {
-                    // save text to lower case (all our months are stored online in lower case)
-                    currentMonth = eSearch.getText().toString().toLowerCase();
-                    SharedPreferences.Editor sharedPreferencesEditor = getSharedPreferences("lastMonth", MODE_PRIVATE).edit();
-                    sharedPreferencesEditor.putString("month", currentMonth);
-                    sharedPreferencesEditor.apply();
-
-                    tStatus.setText("Searching ...");
-                    createNewDBListener(currentMonth);
-                } else {
-                    Toast.makeText(this, "Search field may not be empty", Toast.LENGTH_SHORT).show();
-                }
-                break;
             case R.id.bUpdate:
-                if (!eIncome.getText().toString().isEmpty() && !eExpenses.getText().toString().isEmpty() &&
-                        !eSearch.getText().toString().isEmpty() && contains(months, eSearch.getText().toString().toLowerCase())) {
-                    currentMonth = eSearch.getText().toString().toLowerCase();
+                if (!eIncome.getText().toString().isEmpty() && !eExpenses.getText().toString().isEmpty()) {
                     float income = Float.parseFloat(eIncome.getText().toString());
                     float expenses = Float.parseFloat(eExpenses.getText().toString());
-
-                    updateDb(currentMonth, income, expenses);
+                    if(selectedMonth != null)
+                        updateDb(selectedMonth, income, expenses);
+                    else if(preSelectedMonth != null)
+                        updateDb(preSelectedMonth, income, expenses);
+                    else {
+                        Toast.makeText(this, "I don't know what to update! Please choose a month",
+                                Toast.LENGTH_SHORT).show();
+                    }
                 } else {
                     Toast.makeText(this, "I don't know what to update! Please complete the search field with a month of the year",
                             Toast.LENGTH_SHORT).show();
